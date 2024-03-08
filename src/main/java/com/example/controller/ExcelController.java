@@ -1,9 +1,9 @@
 package com.example.controller;
 
 import com.alibaba.excel.EasyExcel;
-import com.example.entity.ReadData;
 import com.example.entity.WriteData;
 import com.example.service.ExcelService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class ExcelController {
@@ -51,7 +51,28 @@ public class ExcelController {
                     .doWrite(analysisResult);
         } catch (Exception e) {
             // 处理异常情况
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            responseResetAndWriteJsonErrorMessage(response, e);
+        }
+        // 数据写入成功后返回OK状态码
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private void responseResetAndWriteJsonErrorMessage(HttpServletResponse response, Exception e) {
+        // 发生异常时重置响应
+        response.reset();
+
+        // 设置响应的内容类型为JSON
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        // 创建并发送错误信息
+        try {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "failure");
+            errorResponse.put("message", "处理文件时发生错误: " + e.getMessage());
+            response.getWriter().println(new ObjectMapper().writeValueAsString(errorResponse));
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
     }
 }

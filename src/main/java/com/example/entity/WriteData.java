@@ -13,4 +13,8 @@ public class WriteData {
     String word;
     @ExcelProperty("频数")
     Integer count;
+    @ExcelProperty("总数")
+    Integer totalCount;
+    @ExcelProperty("频率")
+    Double frequency;
 }
