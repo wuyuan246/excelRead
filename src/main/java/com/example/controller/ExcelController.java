@@ -39,7 +39,13 @@ public class ExcelController {
             List<WriteData> analysisResult = excelService.analyzeAndGenerateExcel(file);
 
             // 设置响应头部信息
-            String fileName = URLEncoder.encode("分析结果", "UTF-8").replaceAll("\\+", "%20");
+            String originalFileName = file.getOriginalFilename();
+            String baseFileName = originalFileName;
+            if (originalFileName != null && originalFileName.contains(".")) {
+                baseFileName = originalFileName.substring(0, originalFileName.lastIndexOf('.'));
+            }
+            String fileName = URLEncoder.encode(baseFileName + "分析结果", "UTF-8").replaceAll("\\+", "%20");
+
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setCharacterEncoding("UTF-8");
             response.setHeader("Content-disposition", "attachment;filename*=UTF-8''" + fileName + ".xlsx");

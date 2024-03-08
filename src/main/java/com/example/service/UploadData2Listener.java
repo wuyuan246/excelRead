@@ -1,49 +1,41 @@
 package com.example.service;
 
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
-import com.alibaba.excel.util.ListUtils;
-import com.alibaba.fastjson2.JSON;
-import com.example.entity.ReadData;
-import com.example.entity.WriteData;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class UploadData2Listener implements ReadListener<ReadData> {
+public class UploadData2Listener implements ReadListener<Map<Integer, String>> {
 
     /**
      * 数据列表用于收集数据
      */
-    private List<WriteData> dataList = new ArrayList<>();
-    HashMap<String, Integer> map = new HashMap<>();
-    Integer total = 0;
+    private long total = 0;
+    private Map<String, Long> map = new ConcurrentHashMap<>();
 
-    /**
-     * 这个每一条数据解析都会来调用
-     *
-     * @param data    one row value. Is is same as {@link AnalysisContext#readRowHolder()}
-     * @param context
-     */
     @Override
-    public void invoke(ReadData data, AnalysisContext context) {
-        log.info("解析到一条数据:{}", JSON.toJSONString(data));
+    public void invoke(Map<Integer, String> cloumnsData, AnalysisContext context) {
         // 处理每一行数据，并将处理结果添加到数据列表中
-        ToMap(data); // 假设有一个方法转换ReadData到WriteData
-    }
-
-    private void ToMap(ReadData data) {
-        total += 1;
-        String keyWord = data.getData();
-        if(map.containsKey(keyWord)){
-            map.put(keyWord, map.get(keyWord) + 1);
-        }else {
-            map.put(keyWord, 1);
+        if (cloumnsData == null || context == null) {
+            throw new IllegalArgumentException("Data or Context cannot be null.");
         }
+        List<String> words = new ArrayList<>();
+        for (int i = 0; i < cloumnsData.size(); i++) {
+            words.add(cloumnsData.get(i));
+        }
+
+        // 使用Stream API进行数据处理，提高代码的可读性和效率
+        words.stream()
+                .filter(StrUtil::isNotBlank) // 筛选出非空关键词
+                .forEach(keyWord -> {
+                    total++;
+                    map.compute(keyWord, (k, v) -> v == null ? 1L : v + 1L); // 自动处理键不存在的情况
+                });
     }
 
     /**
@@ -54,14 +46,13 @@ public class UploadData2Listener implements ReadListener<ReadData> {
     @Override
     public void doAfterAllAnalysed(AnalysisContext context) {
         // 分析完全部的，转换成输出
-        log.info("所有数据解析完成！");
-
+        log.info("文本读取完毕，大小为：" + map.size());
     }
 
     /**
      * 获取处理后的数据
      */
-    public HashMap<String, Integer> getDataList() {
+    public Map<String, Long> getDataList() {
         map.put("总数量", total);
         return map;
     }

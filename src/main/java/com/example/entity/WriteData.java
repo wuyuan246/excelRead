@@ -12,9 +12,9 @@ public class WriteData {
     @ExcelProperty("关键词")
     String word;
     @ExcelProperty("频数")
-    Integer count;
+    Long count;
     @ExcelProperty("总数")
-    Integer totalCount;
+    Long totalCount;
     @ExcelProperty("频率")
     Double frequency;
 }
