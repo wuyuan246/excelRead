@@ -17,6 +17,7 @@ public class UploadData2Listener implements ReadListener<Map<Integer, String>> {
      */
     private long total = 0;
     private Map<String, Long> map = new ConcurrentHashMap<>();
+    List<String> words = new ArrayList<>();
 
     @Override
     public void invoke(Map<Integer, String> cloumnsData, AnalysisContext context) {
@@ -24,18 +25,13 @@ public class UploadData2Listener implements ReadListener<Map<Integer, String>> {
         if (cloumnsData == null || context == null) {
             throw new IllegalArgumentException("Data or Context cannot be null.");
         }
-        List<String> words = new ArrayList<>();
-        for (int i = 0; i < cloumnsData.size(); i++) {
-            words.add(cloumnsData.get(i));
+        for (Integer i : cloumnsData.keySet()) {
+            String string = cloumnsData.get(i);
+            if(StrUtil.isBlank(string)){
+                continue;
+            }
+            words.add(string);
         }
-
-        // 使用Stream API进行数据处理，提高代码的可读性和效率
-        words.stream()
-                .filter(StrUtil::isNotBlank) // 筛选出非空关键词
-                .forEach(keyWord -> {
-                    total++;
-                    map.compute(keyWord, (k, v) -> v == null ? 1L : v + 1L); // 自动处理键不存在的情况
-                });
     }
 
     /**
@@ -46,7 +42,16 @@ public class UploadData2Listener implements ReadListener<Map<Integer, String>> {
     @Override
     public void doAfterAllAnalysed(AnalysisContext context) {
         // 分析完全部的，转换成输出
-        log.info("文本读取完毕，大小为：" + map.size());
+        log.info("文本读取完毕，大小为：" + words.size());
+        // 使用Stream API进行数据处理，提高代码的可读性和效率
+        words.stream()
+                .filter(StrUtil::isNotBlank) // 筛选出非空关键词
+                .forEach(keyWord -> {
+                    total++;
+                    map.compute(keyWord, (k, v) -> v == null ? 1L : v + 1L); // 自动处理键不存在的情况
+                });
+
+        log.info("文本合并完毕，map大小为：" + map.size());
     }
 
     /**
