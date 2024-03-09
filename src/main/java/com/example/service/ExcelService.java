@@ -1,5 +1,6 @@
 package com.example.service;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.EasyExcel;
 import com.example.entity.ReadData;
 import com.example.entity.WriteData;
@@ -27,54 +28,49 @@ public class ExcelService {
         // 将两个Sheet的数据合并在一起，视需求而定如何合并
         List<WriteData> allDataList = new ArrayList<>();
         List<String> wordList = listener1.getDataList();
-        Map<String, Long> wordMap = listener2.getDataList();
-        convertToWriteData(wordList, wordMap, allDataList);
+        List<String> matchWord = listener2.getDataList();
+        convertToWriteData(wordList, matchWord, allDataList);
         return allDataList;
     }
 
-    private void convertToWriteData(List<String> wordList, Map<String, Long> wordMap, List<WriteData> allDataList) {
+    private void convertToWriteData(List<String> wordList, List<String> matchWord, List<WriteData> allDataList) {
         Map<String, Long> result = new ConcurrentHashMap<>(wordList.size());
-        for (String word : wordList) {
-            // 优化：初始化wordMap中不存在的键值
-            result.computeIfAbsent(word, k -> 0L);
-        }
+        wordList.forEach(w -> result.put(w, 0L));
 
+        // 遍历 matchWord 中的每个元素，检查是否有匹配的 word 元素
+        for (String match : matchWord) {
+            for (String w : wordList) {
+                // 如果 match 包含了 word 列表中的单词，则增加对应 key 的计数
+                if (match.contains(w)) {
+                    result.put(w, result.get(w) + 1);
+                }
+            }
+        }
         // 提取方法以处理“总数量”的特殊逻辑
-        long totalCount = getTotalCount(wordMap);
+        long totalCount = matchWord.size();
 
         for (Map.Entry<String, Long> entry : result.entrySet()) {
             String word = entry.getKey();
+            Long value = entry.getValue();
             WriteData writeData = new WriteData();
-            if(wordMap.containsKey(word)){
-                Long count = wordMap.get(word);
-                writeData.setWord(word);
-                writeData.setCount(count);
-                writeData.setTotalCount(totalCount);
-                // 优化：增加空检查
-                if (totalCount != 0) {
-                    writeData.setFrequency((double) count / totalCount);
-                }
-            } else {
-                writeData.setWord(word);
-                writeData.setCount(0L);
-                writeData.setTotalCount(totalCount);
+            writeData.setWord(word);
+            writeData.setCount(value);
+            writeData.setTotalCount(totalCount);
+            if (value != 0){
+                writeData.setFrequency(value / (double) totalCount);
+            }else {
                 writeData.setFrequency(0.0);
             }
             allDataList.add(writeData);
         }
+        Collections.sort(allDataList, (o1, o2) -> {
+            if (o1.getFrequency() > o2.getFrequency()) {
+                return -1;
+            } else if (o1.getFrequency() < o2.getFrequency()) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
     }
-
-    // 提取的方法用于获取“总数量”
-    private long getTotalCount(Map<String, Long> wordMap) {
-        long totalCount = 0;
-        if (wordMap.containsKey("总数量")) {
-            totalCount = wordMap.get("总数量");
-            // 优化：避免修改原始wordMap，通过复制解决特殊处理与数据完整性之间的冲突
-            wordMap = new ConcurrentHashMap<>(wordMap);
-            wordMap.remove("总数量");
-        }
-        return totalCount;
-    }
-
-
 }
