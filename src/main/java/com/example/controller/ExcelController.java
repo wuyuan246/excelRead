@@ -49,11 +49,12 @@ public class ExcelController {
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setCharacterEncoding("UTF-8");
             response.setHeader("Content-disposition", "attachment;filename*=UTF-8''" + fileName + ".xlsx");
+            response.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
 
             // 使用 EasyExcel.write 方法将生成的分析结果写入 HTTP 响应
             EasyExcel.write(response.getOutputStream(), WriteData.class)
                     .autoCloseStream(Boolean.FALSE)
-                    .sheet("模板")
+                    .sheet("分析结果")
                     .doWrite(analysisResult);
         } catch (Exception e) {
             // 处理异常情况
