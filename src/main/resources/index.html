@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<title>简单文件上传页面</title>
-<style>
+    <meta charset="UTF-8">
+    <title>简单文件上传页面</title>
+    <style>
         body {
             font-family: 'Arial', sans-serif; /* 字体设置 */
             background-color: #f7f7f7; /* 背景颜色 */
@@ -39,71 +39,133 @@
         #status {
             margin-top: 10px;
         }
-    </style>
-<script>
-function uploadFile() {
-    var fileInput = document.getElementById('fileInput');
-    var file = fileInput.files[0];
-    var formData = new FormData();
-    formData.append('file', file);  // 'file' 是你的服务器端期望的字段名
 
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'http://localhost:8081/upload-excel', true);
-    xhr.responseType = 'blob';
-
-    xhr.setRequestHeader('Response-Type', 'blob');
-
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            var contentDisposition = xhr.getResponseHeader('Content-Disposition');
-            var filename = "response.xlsx"; // 默认文件名设定
-            if (contentDisposition) {
-                // 正则表达式匹配修改版，支持UTF-8字符集和URL编码的文件名
-                var filenameRegex = /filename\*=UTF-8''(.+)/i;
-                var matches = filenameRegex.exec(contentDisposition);
-                if (matches != null && matches[1]) {
-                    // 解码URL编码的文件名
-                    filename = decodeURIComponent(matches[1]);
-                }
-            }
-            
-            var type = xhr.getResponseHeader('Content-Type');
-            var blob = new Blob([xhr.response], {type: type});
-
-            if (typeof window.navigator.msSaveBlob !== 'undefined') {
-                // IE workaround for "HTML7007" and "Access Denied" error.
-                window.navigator.msSaveBlob(blob, filename);
-            } else {
-                var URL = window.URL || window.webkitURL;
-                var downloadUrl = URL.createObjectURL(blob);
-
-                if (filename) {
-                    // use HTML5 a[download] attribute to specify filename
-                    var a = document.createElement("a");
-                    // safari doesn't support this yet
-                    if (typeof a.download === 'undefined') {
-                        window.location = downloadUrl;
-                    } else {
-                        a.href = downloadUrl;
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                    }
-                } else {
-                    window.location = downloadUrl;
-                }
-
-                setTimeout(function () { URL.revokeObjectURL(downloadUrl); }, 100); // cleanup
-            }
+        .upload-area {
+            display: flex; /* 使用Flexbox进行布局 */
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直对齐到中间 */
         }
-    };
 
-    xhr.send(formData);
-}
-</script>
+        .file-upload-wrapper {
+            position: relative; /* 相对定位 */
+            overflow: hidden; /* 避免文件输入溢出 */
+            display: inline-block; /* 使其可设置宽度 */
+            margin-right: 10px; /* 和文件名显示区域有一些间隔 */
+        }
+
+        .file-upload-input {
+            width: 100%; /* 充满容器 */
+            height: 100%; /* 充满容器 */
+            position: absolute; /* 绝对定位 */
+            left: 0; /* 左对齐 */
+            top: 0; /* 顶部对齐 */
+            opacity: 0; /* 完全透明 */
+            cursor: pointer; /* 鼠标悬浮时手形光标 */
+        }
+
+        .file-upload-button {
+            display: inline-block; /* 使其可设置宽度 */
+            padding: 10px 20px; /* 按钮内边距 */
+            background-color: #007bff; /* 按钮背景色 */
+            color: white; /* 文字颜色 */
+            text-align: center; /* 文字居中 */
+            border: none; /* 无边框 */
+            border-radius: 5px; /* 圆角按钮 */
+            cursor: pointer; /* 鼠标悬浮时手形光标 */
+        }
+        /* 文件名显示样式 */
+        .file-name-display {
+            display: inline-block; /* 内联块级元素 */
+            padding: 5px; /* 内边距 */
+            margin: 0 10px; /* 外边距 */
+            border: 1px solid #ccc; /* 边框 */
+            border-radius: 5px; /* 边框圆角 */
+            width: 300px; /* 文件名显示区域的宽度 */
+            overflow: hidden; /* 超出部分隐藏 */
+            white-space: nowrap; /* 不换行的单行显示 */
+            text-overflow: ellipsis; /* 超出部分显示省略号 */
+            text-align: center; /* 文本水平居中 */
+        }
+    </style>
+    <script>
+        function uploadFile() {
+            var fileInput = document.getElementById('fileInput');
+            var file = fileInput.files[0];
+            var formData = new FormData();
+            formData.append('file', file);  // 'file' 是你的服务器端期望的字段名
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'http://localhost:8081/upload-excel', true);
+            xhr.responseType = 'blob';
+
+            xhr.setRequestHeader('Response-Type', 'blob');
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var contentDisposition = xhr.getResponseHeader('Content-Disposition');
+                    var filename = "response.xlsx"; // 默认文件名设定
+                    if (contentDisposition) {
+                        // 正则表达式匹配修改版，支持UTF-8字符集和URL编码的文件名
+                        var filenameRegex = /filename\*=UTF-8''(.+)/i;
+                        var matches = filenameRegex.exec(contentDisposition);
+                        if (matches != null && matches[1]) {
+                            // 解码URL编码的文件名
+                            filename = decodeURIComponent(matches[1]);
+                        }
+                    }
+
+                    var type = xhr.getResponseHeader('Content-Type');
+                    var blob = new Blob([xhr.response], {type: type});
+
+                    if (typeof window.navigator.msSaveBlob !== 'undefined') {
+                        // IE workaround for "HTML7007" and "Access Denied" error.
+                        window.navigator.msSaveBlob(blob, filename);
+                    } else {
+                        var URL = window.URL || window.webkitURL;
+                        var downloadUrl = URL.createObjectURL(blob);
+
+                        if (filename) {
+                            // use HTML5 a[download] attribute to specify filename
+                            var a = document.createElement("a");
+                            // safari doesn't support this yet
+                            if (typeof a.download === 'undefined') {
+                                window.location = downloadUrl;
+                            } else {
+                                a.href = downloadUrl;
+                                a.download = filename;
+                                document.body.appendChild(a);
+                                a.click();
+                            }
+                        } else {
+                            window.location = downloadUrl;
+                        }
+
+                        setTimeout(function () { URL.revokeObjectURL(downloadUrl); }, 100); // cleanup
+                    }
+                }
+            };
+
+            xhr.send(formData);
+        }
+        // 更新文件名显示
+        function updateFileName() {
+            var fileInput = document.getElementById('fileInput');
+            var fileDisplayArea = document.getElementById('fileDisplayArea');
+            var filename = fileInput.files[0] ? fileInput.files[0].name : '没有选择文件';
+            fileDisplayArea.textContent = filename; // 更新显示的文件名
+        }
+    </script>
 </head>
 <body>
-    <input type="file" id="fileInput">
-    <button onclick="uploadFile()">上传文件</button>
+<div class="upload-area">
+    <div class="file-upload-wrapper">
+        <input class="file-upload-input" type="file" id="fileInput" onchange="updateFileName()">
+        <!-- 自定义的按钮 -->
+        <button class="file-upload-button" type="button" onclick="document.getElementById('fileInput').click()">选择文件</button>
+    </div>
+    <!-- 文件名显示区域 -->
+    <span id="fileDisplayArea" class="file-name-display">没有选择文件</span>
+    <button class="file-upload-button" onclick="uploadFile()">上传文件</button>
+</div>
 </body>
 </html>
